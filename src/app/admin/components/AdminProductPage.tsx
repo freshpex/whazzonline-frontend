@@ -4,6 +4,7 @@ import { InlineAlert } from '../../../components/feedback/InlineAlert';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { createUser } from '../../auth/services/auth.service';
 import type { AuthRole } from '../../auth/types/auth';
+import { useProducts } from '../../products/hooks/useProducts';
 import { createProduct } from '../../products/services/product.service';
 import type { ProductCreateInput } from '../../products/types/product';
 
@@ -27,6 +28,7 @@ function formatPriceValue(value: string) {
 
 export function AdminProductPage() {
   const { user } = useAuth();
+  const { data: productCatalog } = useProducts({ page: 1, limit: 6 });
   const [productForm, setProductForm] = useState<ProductCreateInput>(initialProductForm);
   const [priceInput, setPriceInput] = useState('0');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -116,8 +118,8 @@ export function AdminProductPage() {
     <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold">Add a product</h1>
-        <p className="mt-2 text-sm text-slate-600">Create a new product listing for the storefront.</p>
-        <Link to="/" className="mt-3 inline-flex text-sm font-semibold text-slate-700">
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Create a new product listing for the storefront.</p>
+        <Link to="/" className="mt-3 inline-flex text-sm font-semibold text-slate-700 dark:text-slate-300">
           Back to products
         </Link>
       </div>
@@ -126,14 +128,14 @@ export function AdminProductPage() {
       {success ? <InlineAlert title={success} tone="success" /> : null}
       {uploadNotice ? <InlineAlert title={uploadNotice} tone="info" /> : null}
 
-      <form onSubmit={handleProductSubmit} className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm">
+      <form onSubmit={handleProductSubmit} className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-semibold">Product name</label>
             <input
               value={productForm.name}
               onChange={(event) => setProductForm((prev) => ({ ...prev, name: event.target.value }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               placeholder="Wireless Headphones"
             />
           </div>
@@ -145,7 +147,7 @@ export function AdminProductPage() {
                 setSelectedCategory(event.target.value);
                 if (event.target.value !== CUSTOM_CATEGORY_VALUE) setCustomCategory('');
               }}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             >
               <option value="">Select a category</option>
               {PRODUCT_CATEGORIES.map((category) => (
@@ -162,7 +164,7 @@ export function AdminProductPage() {
             <input
               value={customCategory}
               onChange={(event) => setCustomCategory(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               placeholder="Type category name"
             />
           </div>
@@ -180,7 +182,7 @@ export function AdminProductPage() {
                 setPriceInput(formatted);
                 setProductForm((prev) => ({ ...prev, price: amount }));
               }}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               placeholder="0"
             />
           </div>
@@ -191,7 +193,7 @@ export function AdminProductPage() {
               min={0}
               value={productForm.stock}
               onChange={(event) => setProductForm((prev) => ({ ...prev, stock: Math.max(0, Number(event.target.value) || 0) }))}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             />
           </div>
         </div>
@@ -207,7 +209,7 @@ export function AdminProductPage() {
           <button
             type="button"
             onClick={() => setUploadNotice('Image upload is coming soon. Please use an image URL for now.')}
-            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold"
+            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold dark:border-slate-700"
           >
             Upload image
           </button>
@@ -218,24 +220,24 @@ export function AdminProductPage() {
           <textarea
             value={productForm.description}
             onChange={(event) => setProductForm((prev) => ({ ...prev, description: event.target.value }))}
-            className="min-h-[120px] w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className="min-h-[120px] w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
           />
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300 dark:bg-slate-100 dark:text-slate-900 dark:disabled:bg-slate-700 dark:disabled:text-slate-400"
         >
           {isSubmitting ? 'Saving...' : 'Create product'}
         </button>
       </form>
 
       {user?.role === 'admin' ? (
-        <section className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm">
+        <section className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div>
             <h2 className="text-xl font-bold">Create users</h2>
-            <p className="mt-1 text-sm text-slate-600">Admins can add vendor, customer, or admin accounts.</p>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Admins can add vendor, customer, or admin accounts.</p>
           </div>
 
           {userError ? <InlineAlert title={userError} tone="error" /> : null}
@@ -249,7 +251,7 @@ export function AdminProductPage() {
                   type="email"
                   value={userEmail}
                   onChange={(event) => setUserEmail(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                   placeholder="new-user@whazzonline.com"
                 />
               </div>
@@ -259,7 +261,7 @@ export function AdminProductPage() {
                   type="tel"
                   value={userPhone}
                   onChange={(event) => setUserPhone(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                   placeholder="+2348012345678"
                 />
               </div>
@@ -272,7 +274,7 @@ export function AdminProductPage() {
                   type="password"
                   value={userPassword}
                   onChange={(event) => setUserPassword(event.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                   placeholder="Minimum 8 characters"
                   required
                 />
@@ -282,7 +284,7 @@ export function AdminProductPage() {
                 <select
                   value={newUserRole}
                   onChange={(event) => setNewUserRole(event.target.value as AuthRole)}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                 >
                   <option value="vendor">Vendor</option>
                   <option value="customer">Customer</option>
@@ -294,13 +296,42 @@ export function AdminProductPage() {
             <button
               type="submit"
               disabled={isCreatingUser}
-              className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700"
             >
               {isCreatingUser ? 'Creating user...' : 'Create user'}
             </button>
           </form>
         </section>
       ) : null}
+
+      <section className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">Current catalog snapshot</h2>
+          <span className="text-xs text-slate-500 dark:text-slate-400">Latest 6 products</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <tr>
+                <th className="pb-2">Name</th>
+                <th className="pb-2">Category</th>
+                <th className="pb-2">Price</th>
+                <th className="pb-2">Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(productCatalog?.items ?? []).map((item) => (
+                <tr key={item.id} className="border-t border-slate-200 dark:border-slate-800">
+                  <td className="py-2 pr-3">{item.name}</td>
+                  <td className="py-2 pr-3 text-slate-600 dark:text-slate-300">{item.category}</td>
+                  <td className="py-2 pr-3 text-slate-600 dark:text-slate-300">₦{item.price.toLocaleString('en-NG')}</td>
+                  <td className="py-2 text-slate-600 dark:text-slate-300">{item.stock}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
   );
 }
