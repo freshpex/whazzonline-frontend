@@ -1,36 +1,77 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { InlineAlert } from '../../../components/feedback/InlineAlert';
 import { EmptyState } from '../../../components/empty-state/EmptyState';
-import type { Product } from '../../products/types/product';
+import { formatCurrency, formatNumber } from '../../../lib/format';
+import { useCart } from '../hooks/useCart';
+import { CartItemRow } from './CartItemRow';
 
 export function CartPage() {
-  const [items, setItems] = useState<Product[]>(() => JSON.parse(localStorage.getItem('whazzonline-cart') ?? '[]'));
-  const total = useMemo(() => items.reduce((sum, item) => sum + item.price, 0), [items]);
-
-  function removeItem(id: string) {
-    const updated = items.filter((item, index) => `${item.id}-${index}` !== id);
-    setItems(updated);
-    localStorage.setItem('whazzonline-cart', JSON.stringify(updated));
-  }
+  const { items, totals, updateQuantity, removeItem, clearCart } = useCart();
+  const [notice, setNotice] = useState<string | null>(null);
 
   if (items.length === 0) return <EmptyState title="Your cart is empty" description="Add a product to see it here." />;
 
   return (
     <section className="space-y-6">
-      <h1 className="text-3xl font-bold">Cart</h1>
-      <div className="space-y-3">
-        {items.map((item, index) => (
-          <div key={`${item.id}-${index}`} className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
-            <div>
-              <h2 className="font-semibold">{item.name}</h2>
-              <p className="text-sm text-slate-600">₦{item.price.toLocaleString()}</p>
-            </div>
-            <button onClick={() => removeItem(`${item.id}-${index}`)} className="rounded-xl border px-3 py-2 text-sm">Remove</button>
-          </div>
+      <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Cart</h1>
+          <p className="mt-1 text-sm text-slate-600">{formatNumber(totals.itemsCount)} items across {formatNumber(totals.uniqueItems)} products.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold">Continue shopping</Link>
+          <button
+            onClick={() => {
+              clearCart();
+              setNotice(null);
+            }}
+            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-rose-600"
+          >
+            Clear cart
+          </button>
+        </div>
+      </div>
+
+      {notice ? <InlineAlert title={notice} tone="warning" /> : null}
+
+      <div className="space-y-4">
+        {items.map((item) => (
+          <CartItemRow
+            key={item.product.id}
+            item={item}
+            onDecrease={() => {
+              setNotice(null);
+              updateQuantity(item.product.id, item.quantity - 1);
+            }}
+            onIncrease={() => {
+              if (item.quantity >= item.product.stock) {
+                setNotice(`Only ${formatNumber(item.product.stock)} units of ${item.product.name} are available right now.`);
+                return;
+              }
+              setNotice(null);
+              updateQuantity(item.product.id, item.quantity + 1);
+            }}
+            onRemove={() => {
+              setNotice(null);
+              removeItem(item.product.id);
+            }}
+          />
         ))}
       </div>
-      <div className="rounded-2xl bg-slate-900 p-5 text-white">
-        <p className="text-sm text-slate-300">Total</p>
-        <p className="text-2xl font-bold">₦{total.toLocaleString()}</p>
+
+      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <h2 className="text-lg font-semibold">Need help?</h2>
+          <p className="mt-2 text-sm text-slate-600">Reach out to our concierge team for bulk pricing, shipping updates, or special requests.</p>
+          <button className="mt-4 rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold">Contact support</button>
+        </div>
+        <div className="rounded-2xl bg-slate-900 p-6 text-white">
+          <p className="text-sm text-slate-300">Order total</p>
+          <p className="mt-2 text-3xl font-bold">{formatCurrency(totals.subtotal)}</p>
+          <p className="mt-2 text-xs text-slate-300">Taxes and delivery calculated at checkout.</p>
+          <button className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-900">Proceed to checkout</button>
+        </div>
       </div>
     </section>
   );

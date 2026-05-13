@@ -3,11 +3,20 @@ import type { Product } from '../types/product';
 
 type ApiResponse<T> = { success: boolean; data: T };
 
-export async function getProducts(search = '', category = '') {
-  const params = new URLSearchParams();
-  if (search) params.set('q', search);
-  if (category) params.set('category', category);
-  const query = params.toString() ? `?${params.toString()}` : '';
-  const response = await apiGet<ApiResponse<Product[]>>(`/products${query}`);
+type ProductQuery = {
+  search?: string;
+  category?: string;
+};
+
+export async function getProducts({ search, category }: ProductQuery) {
+  const response = await apiGet<ApiResponse<Product[]>>('/products', {
+    q: search,
+    category
+  });
+  return response.data;
+}
+
+export async function getProduct(productId: string) {
+  const response = await apiGet<ApiResponse<Product>>(`/products/${productId}`);
   return response.data;
 }
