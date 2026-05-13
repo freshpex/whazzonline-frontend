@@ -15,7 +15,7 @@ export function CartItemRow({ item, onDecrease, onIncrease, onRemove }: CartItem
   return (
     <div className="flex flex-col gap-4 rounded-2xl border bg-white p-4 shadow-sm md:flex-row md:items-center">
       <img
-        src={`${item.product.imageUrl}?auto=format&fit=crop&w=300&q=80`}
+        src={item.product.imageUrl}
         alt={item.product.name}
         className="h-24 w-24 rounded-xl object-cover"
         loading="lazy"

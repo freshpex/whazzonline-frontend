@@ -71,4 +71,4 @@ Set this environment variable on Vercel:
 
 ## Known Limitations
 
-Cart persistence currently uses `localStorage`. Server-side cart persistence is also added after authentication is completed.
+Cart persistence currently uses `localStorage`. Server-side cart persistence will be added.

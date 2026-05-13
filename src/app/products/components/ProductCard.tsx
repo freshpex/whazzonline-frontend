@@ -6,15 +6,16 @@ import type { Product } from '../types/product';
 type ProductCardProps = {
   product: Product;
   onAddToCart: (product: Product) => void;
+  isAdding?: boolean;
 };
 
-export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export function ProductCard({ product, onAddToCart, isAdding = false }: ProductCardProps) {
   const isOutOfStock = product.stock <= 0;
 
   return (
     <article className="overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
       <Link to={`/products/${product.id}`} className="block">
-        <img src={`${product.imageUrl}?auto=format&fit=crop&w=900&q=80`} alt={product.name} className="h-48 w-full object-cover" loading="lazy" />
+        <img src={product.imageUrl} alt={product.name} className="h-48 w-full object-cover" loading="lazy" />
       </Link>
       <div className="space-y-3 p-4">
         <div>
@@ -30,10 +31,10 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
           <button
             onClick={() => onAddToCart(product)}
             className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-            disabled={isOutOfStock}
+            disabled={isOutOfStock || isAdding}
             aria-label={isOutOfStock ? `${product.name} is out of stock` : `Add ${product.name} to cart`}
           >
-            <ShoppingBag size={16} /> {isOutOfStock ? 'Sold out' : 'Add'}
+            <ShoppingBag size={16} /> {isOutOfStock ? 'Sold out' : isAdding ? 'Adding...' : 'Add'}
           </button>
         </div>
       </div>
