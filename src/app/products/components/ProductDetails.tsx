@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Minus, Plus, ShoppingBag } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { InlineAlert } from '../../../components/feedback/InlineAlert';
 import { formatCurrency, formatNumber } from '../../../lib/format';
+import { useAuth } from '../../auth/hooks/useAuth';
 import { useCart } from '../../cart/hooks/useCart';
 import { useProduct } from '../hooks/useProduct';
 
 export function ProductDetails() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { productId } = useParams();
   const { data: product, isLoading, isError } = useProduct(productId);
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [isAdding, setIsAdding] = useState(false);
   const [feedback, setFeedback] = useState<{ title: string; tone: 'success' | 'warning' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -50,21 +54,34 @@ export function ProductDetails() {
     );
   }
 
-  const isOutOfStock = product.stock <= 0;
-  const canIncrease = quantity < product.stock;
+  const currentProduct = product;
+  const isOutOfStock = currentProduct.stock <= 0;
+  const canIncrease = quantity < currentProduct.stock;
 
-  const handleAdd = () => {
-    const result = addItem(product, quantity);
-    if (result.addedQuantity === 0) {
-      setFeedback({ title: `${product.name} is currently out of stock.`, tone: 'error' });
+  async function handleAdd() {
+    if (!user) {
+      navigate('/login');
       return;
     }
-    if (result.exceededStock) {
-      setFeedback({ title: `Only ${formatNumber(result.addedQuantity)} item${result.addedQuantity > 1 ? 's' : ''} were added.`, tone: 'warning' });
-      return;
+
+    setIsAdding(true);
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+
+    try {
+      const result = addItem(currentProduct, quantity);
+      if (result.addedQuantity === 0) {
+        setFeedback({ title: `${currentProduct.name} is currently out of stock.`, tone: 'error' });
+        return;
+      }
+      if (result.exceededStock) {
+        setFeedback({ title: `Only ${formatNumber(result.addedQuantity)} item${result.addedQuantity > 1 ? 's' : ''} were added.`, tone: 'warning' });
+        return;
+      }
+      setFeedback({ title: `${formatNumber(quantity)} ${currentProduct.name} added to cart.`, tone: 'success' });
+    } finally {
+      setIsAdding(false);
     }
-    setFeedback({ title: `${formatNumber(quantity)} ${product.name} added to cart.`, tone: 'success' });
-  };
+  }
 
   return (
     <section className="space-y-6">
@@ -74,14 +91,14 @@ export function ProductDetails() {
 
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="overflow-hidden rounded-3xl border bg-white shadow-sm">
-          <img src={`${product.imageUrl}?auto=format&fit=crop&w=1200&q=80`} alt={product.name} className="h-full w-full object-cover" />
+          <img src={currentProduct.imageUrl} alt={currentProduct.name} className="h-full w-full object-cover" />
         </div>
         <div className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{product.category}</p>
-          <h1 className="text-3xl font-bold text-slate-900">{product.name}</h1>
-          <p className="text-sm text-slate-600">{product.description}</p>
-          <p className="text-sm text-slate-500">{formatNumber(product.stock)} in stock</p>
-          <p className="text-3xl font-bold text-slate-900">{formatCurrency(product.price)}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{currentProduct.category}</p>
+          <h1 className="text-3xl font-bold text-slate-900">{currentProduct.name}</h1>
+          <p className="text-sm text-slate-600">{currentProduct.description}</p>
+          <p className="text-sm text-slate-500">{formatNumber(currentProduct.stock)} in stock</p>
+          <p className="text-3xl font-bold text-slate-900">{formatCurrency(currentProduct.price)}</p>
 
           {feedback ? <InlineAlert title={feedback.title} tone={feedback.tone} /> : null}
 
@@ -96,7 +113,7 @@ export function ProductDetails() {
               </button>
               <span className="min-w-10 text-center text-sm font-semibold">{formatNumber(quantity)}</span>
               <button
-                onClick={() => setQuantity((prev) => Math.min(Math.max(1, product.stock), prev + 1))}
+                onClick={() => setQuantity((prev) => Math.min(Math.max(1, currentProduct.stock), prev + 1))}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                 aria-label="Increase quantity"
                 disabled={!canIncrease}
@@ -107,9 +124,9 @@ export function ProductDetails() {
             <button
               onClick={handleAdd}
               className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
-              disabled={isOutOfStock}
+              disabled={isOutOfStock || isAdding}
             >
-              <ShoppingBag size={16} /> {isOutOfStock ? 'Sold out' : 'Add to cart'}
+              <ShoppingBag size={16} /> {isOutOfStock ? 'Sold out' : isAdding ? 'Adding...' : 'Add to cart'}
             </button>
           </div>
 

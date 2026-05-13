@@ -9,8 +9,17 @@ import { CartItemRow } from './CartItemRow';
 export function CartPage() {
   const { items, totals, updateQuantity, removeItem, clearCart } = useCart();
   const [notice, setNotice] = useState<string | null>(null);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   if (items.length === 0) return <EmptyState title="Your cart is empty" description="Add a product to see it here." />;
+
+  async function handleCheckout() {
+    setNotice(null);
+    setIsCheckingOut(true);
+    await new Promise((resolve) => window.setTimeout(resolve, 700));
+    setIsCheckingOut(false);
+    setNotice('Checkout is not available yet. This is coming soon.');
+  }
 
   return (
     <section className="space-y-6">
@@ -20,7 +29,7 @@ export function CartPage() {
           <p className="mt-1 text-sm text-slate-600">{formatNumber(totals.itemsCount)} items across {formatNumber(totals.uniqueItems)} products.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to="/" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold">Continue shopping</Link>
+          <Link to="/" className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold">Close Cart</Link>
           <button
             onClick={() => {
               clearCart();
@@ -70,7 +79,13 @@ export function CartPage() {
           <p className="text-sm text-slate-300">Order total</p>
           <p className="mt-2 text-3xl font-bold">{formatCurrency(totals.subtotal)}</p>
           <p className="mt-2 text-xs text-slate-300">Taxes and delivery calculated at checkout.</p>
-          <button className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-900">Proceed to checkout</button>
+          <button
+            onClick={handleCheckout}
+            disabled={isCheckingOut}
+            className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+          >
+            {isCheckingOut ? 'Proceeding...' : 'Proceed to checkout'}
+          </button>
         </div>
       </div>
     </section>

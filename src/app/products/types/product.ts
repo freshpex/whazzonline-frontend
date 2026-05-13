@@ -8,6 +8,8 @@ export type Product = {
   stock: number;
 };
 
+export type ProductCreateInput = Omit<Product, 'id'>;
+
 export type ProductSort = 'featured' | 'price-asc' | 'price-desc';
 
 export type ProductFilters = {

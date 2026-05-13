@@ -1,5 +1,5 @@
-import { apiGet } from '../../../lib/api';
-import type { Product } from '../types/product';
+import { apiGet, apiPost } from '../../../lib/api';
+import type { Product, ProductCreateInput } from '../types/product';
 
 type ApiResponse<T> = { success: boolean; data: T };
 
@@ -18,5 +18,10 @@ export async function getProducts({ search, category }: ProductQuery) {
 
 export async function getProduct(productId: string) {
   const response = await apiGet<ApiResponse<Product>>(`/products/${productId}`);
+  return response.data;
+}
+
+export async function createProduct(payload: ProductCreateInput) {
+  const response = await apiPost<ApiResponse<Product>, ProductCreateInput>('/products', payload);
   return response.data;
 }
