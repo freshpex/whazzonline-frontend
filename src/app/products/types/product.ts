@@ -7,3 +7,12 @@ export type Product = {
   category: string;
   stock: number;
 };
+
+export type ProductSort = 'featured' | 'price-asc' | 'price-desc';
+
+export type ProductFilters = {
+  search: string;
+  category: string;
+  inStockOnly: boolean;
+  sort: ProductSort;
+};

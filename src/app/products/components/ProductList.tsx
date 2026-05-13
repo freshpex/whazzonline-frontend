@@ -1,38 +1,106 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { InlineAlert } from '../../../components/feedback/InlineAlert';
 import { EmptyState } from '../../../components/empty-state/EmptyState';
-import { getProducts } from '../services/product.service';
-import type { Product } from '../types/product';
+import { formatNumber } from '../../../lib/format';
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue';
+import { useCart } from '../../cart/hooks/useCart';
+import type { Product, ProductFilters } from '../types/product';
+import { useProducts } from '../hooks/useProducts';
 import { ProductCard } from './ProductCard';
+import { ProductFilters as ProductFiltersPanel } from './ProductFilters';
+import { ProductListSkeleton } from './ProductListSkeleton';
+
+const ALL_CATEGORIES = 'All categories';
+
+const defaultFilters: ProductFilters = {
+  search: '',
+  category: ALL_CATEGORIES,
+  inStockOnly: false,
+  sort: 'featured'
+};
 
 export function ProductList() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [search, setSearch] = useState('');
-  const [message, setMessage] = useState('');
+  const [filters, setFilters] = useState<ProductFilters>(defaultFilters);
+  const [feedback, setFeedback] = useState<{ title: string; tone: 'success' | 'warning' | 'error' } | null>(null);
+  const debouncedSearch = useDebouncedValue(filters.search);
+  const { addItem } = useCart();
+
+  const trimmedSearch = debouncedSearch.trim();
+
+  const { data, isLoading, isError } = useProducts({
+    search: trimmedSearch.length ? trimmedSearch : undefined,
+    category: filters.category === ALL_CATEGORIES ? undefined : filters.category
+  });
+
+  const categories = useMemo(() => {
+    const unique = new Set((data ?? []).map((product) => product.category));
+    return [ALL_CATEGORIES, ...Array.from(unique)];
+  }, [data]);
+
+  const products = useMemo(() => {
+    let filtered = [...(data ?? [])];
+    if (filters.inStockOnly) filtered = filtered.filter((product) => product.stock > 0);
+    if (filters.sort === 'price-asc') filtered.sort((a, b) => a.price - b.price);
+    if (filters.sort === 'price-desc') filtered.sort((a, b) => b.price - a.price);
+    return filtered;
+  }, [data, filters]);
 
   useEffect(() => {
-    getProducts(search).then(setProducts).catch(() => setMessage('Unable to load products. Please try again.'));
-  }, [search]);
+    if (!feedback) return;
+    const handle = window.setTimeout(() => setFeedback(null), 4000);
+    return () => window.clearTimeout(handle);
+  }, [feedback]);
 
-  function addToCart(product: Product) {
-    const existing = JSON.parse(localStorage.getItem('whazzonline-cart') ?? '[]') as Product[];
-    localStorage.setItem('whazzonline-cart', JSON.stringify([...existing, product]));
-    setMessage(`${product.name} added to cart.`);
+  function handleAddToCart(product: Product) {
+    const result = addItem(product, 1);
+    if (result.addedQuantity === 0) {
+      setFeedback({ title: `${product.name} is currently out of stock.`, tone: 'error' });
+      return;
+    }
+
+    if (result.exceededStock) {
+      setFeedback({
+        title: `We added ${formatNumber(result.addedQuantity)} item${result.addedQuantity > 1 ? 's' : ''} of ${product.name}.`,
+        tone: 'warning'
+      });
+      return;
+    }
+
+    setFeedback({ title: `${product.name} added to cart.`, tone: 'success' });
   }
 
   return (
     <section className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-[1fr_320px] md:items-end">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Shop reliable products</h1>
-          <p className="mt-2 text-slate-600">A clean mini-commerce foundation for buyers and vendors.</p>
+          <p className="mt-2 text-slate-600">A curated Whazzonline selection for buyers and vendors.</p>
         </div>
-        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products..." className="rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-slate-900" />
+        <div className="text-sm text-slate-600">{formatNumber(products.length)} products</div>
       </div>
-      {message ? <p className="rounded-xl bg-white p-3 text-sm text-slate-700 shadow-sm">{message}</p> : null}
-      {products.length === 0 ? <EmptyState title="No products found" description="Try a different search term or clear your filters." /> : null}
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {products.map((product) => <ProductCard key={product.id} product={product} onAddToCart={addToCart} />)}
-      </div>
+
+      <ProductFiltersPanel
+        filters={filters}
+        categories={categories}
+        onChange={setFilters}
+        onReset={() => setFilters({ ...defaultFilters })}
+      />
+
+      {feedback ? <InlineAlert title={feedback.title} tone={feedback.tone} /> : null}
+      {isError ? <InlineAlert title="Unable to load products." description="Please refresh or try again shortly." tone="error" /> : null}
+
+      {isLoading ? <ProductListSkeleton /> : null}
+      {!isLoading && products.length === 0 ? (
+        <EmptyState title="No products found" description="Try a different search term or clear your filters." />
+      ) : null}
+
+      {!isLoading ? (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }
