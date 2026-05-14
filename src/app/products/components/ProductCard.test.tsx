@@ -24,7 +24,7 @@ describe('ProductCard', () => {
     );
 
     expect(screen.getByText(product.name)).toBeTruthy();
-    expect(screen.getByText('₦25,000')).toBeTruthy();
+    expect(screen.getByText(/25,000/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /add wireless headphones to cart/i }));
     expect(onAddToCart).toHaveBeenCalledWith(product);

@@ -5,5 +5,5 @@ export function formatNumber(value: number) {
 }
 
 export function formatCurrency(value: number) {
-  return `₦${numberFormatter.format(value)}`;
+  return `\u20A6${numberFormatter.format(value)}`;
 }

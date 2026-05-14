@@ -6,6 +6,20 @@ import './index.css';
 import { queryClient } from './lib/queryClient';
 import { router } from './routes/AppRoutes';
 
+if (typeof window !== 'undefined') {
+  try {
+    const persisted = window.localStorage.getItem('whazzonline-theme');
+    if (persisted) {
+      const parsed = JSON.parse(persisted) as { state?: { theme?: 'light' | 'dark' } };
+      if (parsed.state?.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      }
+    }
+  } catch {
+    // Ignore malformed persisted theme payloads.
+  }
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
